@@ -1,7 +1,7 @@
 var express = require("express");
 var logger = require("morgan");
 var mongoose = require("mongoose");
-
+var path=require('path');
 // Our scraping tools
 var axios = require("axios");
 var cheerio = require("cheerio");
@@ -15,7 +15,7 @@ var PORT = 3000;
 var app = express();
 
 // Configure middleware
-
+mongoose.Promise = Promise;
 // Use morgan logger for logging requests
 app.use(logger("dev"));
 // Parse request body as JSON
@@ -35,10 +35,10 @@ app.set("view engine", "handlebars");
 
 // Connect to the Mongo DB
 mongoose.connect("mongodb://localhost/nytscraper", { useNewUrlParser: true });
-
+var db = mongoose.connection;
 // Show any mongoose errors
-db.on("error", function(error) {
-    console.log("Mongoose Error: ", error);
+db.on("error", function(err) {
+    console.log("Mongoose Error: ", err);
   });
   
 // Once logged in to the db through mongoose, log a success message
