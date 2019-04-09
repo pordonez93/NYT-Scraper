@@ -9,7 +9,7 @@ $(document).ready(function() {
 
   function initPage() {
     articleContainer.empty();
-    $.get("/api/articles?saved=true").then(function(data) {
+    $.get("/saved").then(function(data) {
       if (data && data.length) {
         renderArticles(data);
       }
@@ -20,18 +20,18 @@ $(document).ready(function() {
   }
 
   function renderArticles(articles) {
-    var articlePanels = [];
+    var articleCards = [];
     for (var i = 0; i < articles.length; i++) {
-      articlePanels.push(createPanel(articles[i]));
+      articleCards.push(createCard(articles[i]));
     }
-    articleContainer.append(articlePanels);
+    articleContainer.append(articleCards);
   }
 
-  function createPanel(article) {
-    var panel = $(
+  function createCard(article) {
+    var card = $(
       [
-        "<div class='panel panel-default'>",
-        "<div class='panel-heading'>",
+        "<div class='card card-default'>",
+        "<div class='card-heading'>",
         "<h3>",
         "<a class='article-link' target='_blank' href='" + article.url + "'>",
         article.article,
@@ -42,14 +42,14 @@ $(document).ready(function() {
         "<a class='btn btn-info notes'>Article Notes</a>",
         "</h3>",
         "</div>",
-        "<div class='panel-body'>",
+        "<div class='card-body'>",
         article.summary,
         "</div>",
         "</div>"
       ].join("")
     );
-    panel.data("_id", article._id);
-    return panel;
+    card.data("_id", article._id);
+    return card;
   }
 
   function renderEmpty() {
@@ -58,11 +58,11 @@ $(document).ready(function() {
         "<div class='alert alert-warning text-center'>",
         "<h4>Uh Oh. Looks like we don't have any saved articles.</h4>",
         "</div>",
-        "<div class='panel panel-default'>",
-        "<div class='panel-heading text-center'>",
+        "<div class='card card-default'>",
+        "<div class='card-heading text-center'>",
         "<h3>Would You Like to Browse Available Articles?</h3>",
         "</div>",
-        "<div class='panel-body text-center'>",
+        "<div class='card-body text-center'>",
         "<h4><a href='/'>Browse Articles</a></h4>",
         "</div>",
         "</div>"
@@ -96,10 +96,10 @@ $(document).ready(function() {
   }
 
   function handleArticleDelete() {
-    var articleToDelete = $(this).parents(".panel").data();
+    var articleToDelete = $(this).parents(".card").data();
     $.ajax({
       method: "DELETE",
-      url: "/api/articles/" + articleToDelete._id
+      url: "/articles/" + articleToDelete._id
     }).then(function(data) {
       if (data.ok) {
         initPage();
@@ -108,8 +108,8 @@ $(document).ready(function() {
   }
 
   function handleArticleNotes() {
-    var currentArticle = $(this).parents(".panel").data();
-    $.get("/api/notes/" + currentArticle._id).then(function(data) {
+    var currentArticle = $(this).parents(".card").data();
+    $.get("/articles/" + currentArticle._id).then(function(data) {
       var modalText = [
         "<div class='container-fluid text-center'>",
         "<h4>Notes For Article: ",
@@ -143,16 +143,16 @@ $(document).ready(function() {
         _id: $(this).data("article")._id,
         noteText: newNote
       };
-      $.post("/api/notes", noteData).then(function() {
+      $.post("/articles/save", noteData).then(function() {
         bootbox.hideAll();
       });
     }
   }
 
   function handleNoteDelete() {
-    var noteToDelete = $(this).data("_id");
+    var noteID = $(this).data("_id");
     $.ajax({
-      url: "/api/notes/" + noteToDelete,
+      url: "/notes/delete" + noteID,
       method: "DELETE"
     }).then(function() {
       bootbox.hideAll();

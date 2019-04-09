@@ -1,3 +1,4 @@
+/*global bootbox*/
 $(document).ready(function() {
   // Adding event listeners 
   var articleContainer = $(".article-container");
@@ -8,7 +9,7 @@ $(document).ready(function() {
 
   function initPage() {
     articleContainer.empty();
-    $.get("/api/articles?saved=false").then(function(data) {
+    $.get("/articles").then(function(data) {
       // If we have headlines, render them to the page
       if (data && data.length) {
         renderArticles(data);
@@ -21,18 +22,18 @@ $(document).ready(function() {
   }
 
   function renderArticles(articles) {
-    var articlePanels = [];
+    var articleCards = [];
     for (var i = 0; i < articles.length; i++) {
-      articlePanels.push(createPanel(articles[i]));
+      articleCards.push(createCard(articles[i]));
     }
-    articleContainer.append(articlePanels);
+    articleContainer.append(articleCards);
   }
 
-  function createPanel(article) {
-    var panel = $(
+  function createCard(article) {
+    var card = $(
       [
-        "<div class='panel panel-default'>",
-        "<div class='panel-heading'>",
+        "<div class='card card-default'>",
+        "<div class='card-heading'>",
         "<h3>",
         "<a class='article-link' target='_blank' href='" + article.url + "'>",
         article.article,
@@ -42,27 +43,27 @@ $(document).ready(function() {
         "</a>",
         "</h3>",
         "</div>",
-        "<div class='panel-body'>",
+        "<div class='card-body'>",
         article.summary,
         "</div>",
         "</div>"
       ].join("")
     );
-    panel.data("_id", article._id);
-    return panel;
+    card.data("_id", article._id);
+    return card;
   }
 
   function renderEmpty() {
     var emptyAlert = $(
       [
         "<div class='alert alert-warning text-center'>",
-        "<h4>Uh Oh. Looks like we don't have any new articles.</h4>",
+        "<h4>Looks like we don't have any new articles.</h4>",
         "</div>",
-        "<div class='panel panel-default'>",
-        "<div class='panel-heading text-center'>",
+        "<div class='card card-default'>",
+        "<div class='card-heading text-center'>",
         "<h3>What Would You Like To Do?</h3>",
         "</div>",
-        "<div class='panel-body text-center'>",
+        "<div class='card-body text-center'>",
         "<h4><a class='scrape-new'>Try Scraping New Articles</a></h4>",
         "<h4><a href='/saved'>Go to Saved Articles</a></h4>",
         "</div>",
@@ -74,12 +75,12 @@ $(document).ready(function() {
 
   function handleArticleSave() {
     var articleToSave = $(this)
-      .parents(".panel")
+      .parents(".card")
       .data();
     articleToSave.saved = true;
     $.ajax({
       method: "PUT",
-      url: "/api/articles/" + articleToSave._id,
+      url: "/articles/save/" + articleToSave._id,
       data: articleToSave
     }).then(function(data) {
       if (data.saved) {
@@ -89,9 +90,9 @@ $(document).ready(function() {
   }
 
   function handleArticleScrape() {
-    $.get("/api/fetch").then(function(data) {
+    $.get("/scrape").then(function(data) {
       initPage();
-      bootbox.alert("<h3 class='text-center m-top-80'>" + data.message + "<h3>");
+      // bootbox.alert("<h3 class='text-center m-top-80'>" + data.message + "<h3>");
     });
   }
 });

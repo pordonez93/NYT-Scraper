@@ -2,7 +2,7 @@ var mongoose = require("mongoose");
 
 var Schema = mongoose.Schema;
 
-var articleSchema = new Schema({
+var ArticleSchema = new Schema({
   article: {
     type: String,
     required: true,
@@ -26,7 +26,5 @@ var articleSchema = new Schema({
   }
 });
 
-var article = mongoose.model("article", articleSchema);
-
-// Export the article model
-module.exports = article;
+var Article = mongoose.model("Article", ArticleSchema);
+module.exports = Article;

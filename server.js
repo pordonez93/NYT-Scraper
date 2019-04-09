@@ -6,15 +6,15 @@ var path=require('path');
 var axios = require("axios");
 var cheerio = require("cheerio");
 
-// Require all models
-var db = require("./models");
+// Requiring Note and Article models
+var Article = require("./models/Article.js");
+var Note = require("./models/Note.js")
 
-var PORT = 3000;
+var PORT = process.env.PORT || 3000;
 
 // Initialize Express
 var app = express();
 
-// Configure middleware
 mongoose.Promise = Promise;
 // Use morgan logger for logging requests
 app.use(logger("dev"));
@@ -67,39 +67,44 @@ app.get("/", function(req, res) {
     });
   });
   
-// A GET route for scraping the echoJS website
-app.get("/scrape", function(req, res) {
-  // First, we grab the body of the html with axios
+// A GET route for scraping the nytimes website
+app.get("/scrape", function(req, res){
+  // Scrape the NYTimes website
   axios.get("http://www.nytimes.com").then(function(response) {
-    // Then, we load that into cheerio and save it to $ for a shorthand selector
     var $ = cheerio.load(response.data);
+    var articles = [];
 
-    // Now, we grab every h2 within an article tag, and do the following:
-    $("article h2").each(function(i, element) {
-      // Save an empty result object
-      var result = {};
+    $(".theme-summary").each(function(i, element) {
+      var head = $(this)
+        .children(".story-heading")
+        .text()
+        .trim();
 
-      // Add the text and href of every link, and save them as properties of the result object
-      result.title = $(this)
-        .children("a")
-        .text();
-      result.link = $(this)
+      // Grab the URL of the article
+      var url = $(this)
+        .children(".story-heading")
         .children("a")
         .attr("href");
+      //   Grab the summary
+      var sum = $(this)
+        .children(".summary")
+        .text()
+        .trim();
 
-      // Create a new Article using the `result` object built from scraping
-      db.Article.create(result)
-        .then(function(dbArticle) {
-          // View the added result in the console
-          console.log(dbArticle);
-        })
-        .catch(function(err) {
-          // If an error occurred, log it
-          console.log(err);
-        });
+      // So long as our headline and sum and url aren't empty or undefined, do the following
+      if (head && sum && url) {
+        // We're removing extra lines, extra spacing, and extra tabs.
+        var headNeat = head.replace(/(\r\n|\n|\r|\t|\s+)/gm, " ").trim();
+        var sumNeat = sum.replace(/(\r\n|\n|\r|\t|\s+)/gm, " ").trim();
+        // Initialize an object we will push to the articles array
+        var dataToAdd = {
+          article: headNeat,
+          summary: sumNeat,
+          url: url
+        };
+        articles.push(dataToAdd);
+      }
     });
-
-    // Send a message to the client
     res.send("Scrape Complete");
   });
 });
@@ -107,7 +112,7 @@ app.get("/scrape", function(req, res) {
 // Route for getting all Articles from the db
 app.get("/articles", function(req, res) {
   // Grab every document in the Articles collection
-  db.Article.find({})
+  Article.find({})
     .then(function(dbArticle) {
       // If we were able to successfully find Articles, send them back to the client
       res.json(dbArticle);
@@ -121,7 +126,7 @@ app.get("/articles", function(req, res) {
 // Route for grabbing a specific Article by id, populate it with it's note
 app.get("/articles/:id", function(req, res) {
   // Using the id passed in the id parameter, prepare a query that finds the matching one in our db...
-  db.Article.findOne({ _id: req.params.id })
+  Article.findOne({ _id: req.params.id })
     // ..and populate all of the notes associated with it
     .populate("note")
     .then(function(dbArticle) {
@@ -135,9 +140,9 @@ app.get("/articles/:id", function(req, res) {
 });
 
 // Route for saving/updating an Article's associated Note
-app.post("/articles/:id", function(req, res) {
+app.post("/articles/save", function(req, res) {
   // Create a new note and pass the req.body to the entry
-  db.Note.create(req.body)
+  Note.create(req.body)
     .then(function(dbNote) {
       return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true });
     })
@@ -150,6 +155,11 @@ app.post("/articles/:id", function(req, res) {
       res.json(err);
     });
 });
+// Delete a Note
+// app.delete("/notes/delete:note_id/:article_id", function(req, res){
+//   Note.findOneAndDelete({ _id: req.params.id},
+//     function())
+// })
 
 // Start the server
 app.listen(PORT, function() {
